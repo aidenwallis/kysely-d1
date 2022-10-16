@@ -13,34 +13,24 @@ import {
 } from 'kysely';
 
 /**
- * Config for the D1 dialect. Pass your D1 instance to this object that you bound in wrangler.toml
+ * Config for the D1 dialect. Pass your D1 instance to this object that you bound in `wrangler.toml`.
  */
 export interface D1DialectConfig {
   database: D1Database;
 }
 
 /**
- * PlanetScale dialect that uses the [PlanetScale Serverless Driver for JavaScript][0].
- * The constructor takes an instance of {@link Config} from `@planetscale/database`.
+ * D1 dialect that adds support for [Cloudflare D1][0] in [Kysely][1].
+ * The constructor takes the instance of your D1 database that you bound in `wrangler.toml`.
  *
  * ```typescript
- * new PlanetScaleDialect({
- *   host: '<host>',
- *   username: '<username>',
- *   password: '<password>',
- * })
- *
- * // or with a connection URL
- *
- * new PlanetScaleDialect({
- *   url: process.env.DATABASE_URL ?? 'mysql://<username>:<password>@<host>/<database>'
+ * new D1Dialect({
+ *   database: env.DB,
  * })
  * ```
  *
- * See the [`@planetscale/database` documentation][1] for more information.
- *
- * [0]: https://github.com/planetscale/database-js
- * [1]: https://github.com/planetscale/database-js#readme
+ * [0]: https://blog.cloudflare.com/introducing-d1/
+ * [1]: https://github.com/koskimas/kysely
  */
 export class D1Dialect implements Dialect {
   #config: D1DialectConfig;

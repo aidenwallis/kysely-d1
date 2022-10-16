@@ -9,7 +9,8 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsc",
-    "format": "prettier --write ."
+    "check": "prettier --check src/ example/",
+    "format": "prettier --write src/ example/"
   },
   "peerDependencies": {
     "kysely": "*"
