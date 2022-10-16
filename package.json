@@ -1,7 +1,7 @@
 {
   "name": "kysely-d1",
   "main": "./dist/index.js",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "types": "./dist/index.d.ts",
   "repository": "git@github.com:aidenwallis/kysely-d1.git",
   "author": "Aiden <aiden@aidenwallis.co.uk>",
