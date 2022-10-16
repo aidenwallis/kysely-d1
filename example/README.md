@@ -1,13 +1,13 @@
 # example
 
-An example Kysely project using kysely-d1.
+An example Kysely project using [kysely-d1](https://github.com/aidenwallis/kysely-d1) and [Cloudflare D1](https://blog.cloudflare.com/introducing-d1/).
 
 ## Setup
 
 **First, create a D1 database:**
 
 ```bash
-npx wrangler d1 create kysely-test
+npm run create-db
 ```
 
 Take note of the name and UUID of the database.
@@ -24,7 +24,7 @@ database_id = "<YOUR ID>"
 **Then, run the migration script:**
 
 ```bash
-npx wrangler d1 execute kysely-test --file ./setup.sql --local
+npm run setup
 ```
 
 ## Running locally
@@ -32,5 +32,5 @@ npx wrangler d1 execute kysely-test --file ./setup.sql --local
 After setup, run the project locally:
 
 ```bash
-npx wrangler dev --local --persist
+npm run start
 ```

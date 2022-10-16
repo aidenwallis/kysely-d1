@@ -1,12 +1,13 @@
 # kysely-d1
 
 [![ci](https://github.com/aidenwallis/kysely-d1/actions/workflows/ci.yaml/badge.svg)](https://github.com/aidenwallis/kysely-d1/actions/workflows/ci.yaml)
+[![npm](https://img.shields.io/npm/v/kysely-d1.svg)](https://www.npmjs.com/package/kysely-d1)
+
+[Kysely](https://github.com/koskimas/kysely) adapter for [Cloudflare D1](https://blog.cloudflare.com/introducing-d1/).
 
 ```bash
-npm install kysely-d1
+npm i kysely-d1
 ```
-
-An adapter for [Cloudflare D1](https://blog.cloudflare.com/introducing-d1/) using [Kysely](https://github.com/koskimas/kysely).
 
 This project was largely adapted from [kysely-planetscale](https://github.com/depot/kysely-planetscale).
 
