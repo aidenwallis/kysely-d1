@@ -1,0 +1,15 @@
+{
+  "extends": "@tsconfig/node14/tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "alwaysStrict": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "preserveConstEnums": true,
+    "declaration": true,
+    "types": ["@cloudflare/workers-types"]
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "test"]
+}
