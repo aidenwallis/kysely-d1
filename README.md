@@ -1,5 +1,7 @@
 # kysely-d1
 
+[![ci](https://github.com/aidenwallis/kysely-d1/actions/workflows/ci.yaml/badge.svg)](https://github.com/aidenwallis/kysely-d1/actions/workflows/ci.yaml)
+
 ```bash
 npm install kysely-d1
 ```
