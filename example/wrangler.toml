@@ -1,4 +1,4 @@
-name = "fuck-wrangler"
+name = "kysely-d1"
 main = "src/index.ts"
 compatibility_date = "2022-10-16"
 
