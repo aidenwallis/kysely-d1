@@ -2,6 +2,8 @@
 
 An adapter for [Cloudflare D1](https://blog.cloudflare.com/introducing-d1/) using [Kysely](https://github.com/koskimas/kysely).
 
+This project was largely adapted from [kysely-planetscale](https://github.com/depot/kysely-planetscale).
+
 ## Usage
 
 Pass your D1 binding into the dialect in order to configure the Kysely client. Follow the private D1 beta docs to setup a D1 binding to your worker.
