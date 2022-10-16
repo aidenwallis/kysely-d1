@@ -1,5 +1,6 @@
 {
   "name": "kysely-d1",
+  "description": "Kysely dialect for Cloudflare D1",
   "main": "./dist/index.js",
   "version": "0.0.3",
   "types": "./dist/index.d.ts",
@@ -8,6 +9,13 @@
   "license": "MIT",
   "files": [
     "dist"
+  ],
+  "keywords": [
+    "kysely",
+    "cloudflare",
+    "d1",
+    "workers",
+    "serverless"
   ],
   "scripts": {
     "build": "tsc",
