@@ -8,7 +8,9 @@
   },
   "private": true,
   "scripts": {
-    "start": "wrangler dev",
+    "create-db": "wrangler d1 create kysely-test",
+    "start": "wrangler dev --local --persist",
+    "setup": "wrangler d1 execute kysely-test --file ./setup.sql --local",
     "deploy": "wrangler publish"
   },
   "dependencies": {
