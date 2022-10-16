@@ -1,0 +1,21 @@
+
+name: ci
+on: [push]
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Setup node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16
+    - name: Install dependencies
+      run: npm i
+    - name: Build code
+      run: npm run build
+    - name: Run prettier
+      run: npm run check

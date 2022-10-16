@@ -1,5 +1,9 @@
 # kysely-d1
 
+```bash
+npm install kysely-d1
+```
+
 An adapter for [Cloudflare D1](https://blog.cloudflare.com/introducing-d1/) using [Kysely](https://github.com/koskimas/kysely).
 
 This project was largely adapted from [kysely-planetscale](https://github.com/depot/kysely-planetscale).
