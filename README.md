@@ -37,7 +37,7 @@ export default {
     const { searchParams } = new URL(request.url);
     const key = searchParams.get('key');
     if (!key) {
-      return new Response('No key defined.', {status: 400});
+      return new Response('No key defined.', { status: 400 });
     }
 
     // Create Kysely instance with kysely-d1
