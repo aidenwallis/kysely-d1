@@ -46,7 +46,7 @@ export default {
     // Read row from D1 table
     const result = await db.selectFrom('kv').selectAll().where('key', '=', key).executeTakeFirst();
     if (!result) {
-      return new Response('', { status: 404 });
+      return new Response('No value found', { status: 404 });
     }
 
     return new Response(result.value);
