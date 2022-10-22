@@ -35,12 +35,23 @@ interface Database {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const { searchParams } = new URL(request.url);
-    const action = searchParams.get('action');
     const key = searchParams.get('key');
-    const value = searchParams.get('value');
+    if (!key) {
+      return new Response('No key defined.', { status: 400 });
+    }
+
+    // Create Kysely instance with kysely-d1
     const db = new Kysely<Database>({ dialect: new D1Dialect({ database: env.DB }) });
+    
+    // Read row from D1 table
+    const result = await db.selectFrom('kv').selectAll().where('key', '=', key).executeTakeFirst();
+    if (!result) {
+      return new Response('No value found', { status: 404 });
+    }
+
+    return new Response(result.value);
   },
 };
 ```
 
-There is a working [example](example) also included, that implements a K/V style store using D1.
+There is a working [example](example) also included, which implements a K/V style store using D1.
