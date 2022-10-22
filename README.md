@@ -34,13 +34,9 @@ interface Database {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const { searchParams } = new URL(request.url);
-    const action = searchParams.get('action');
-    const key = searchParams.get('key');
-    const value = searchParams.get('value');
     const db = new Kysely<Database>({ dialect: new D1Dialect({ database: env.DB }) });
   },
 };
 ```
 
-There is a working [example](example) also included, that implements a K/V style store using D1.
+There is a working [example](example) also included, which implements a K/V style store using D1.
