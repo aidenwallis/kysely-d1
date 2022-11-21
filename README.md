@@ -3,7 +3,7 @@
 [![ci](https://github.com/aidenwallis/kysely-d1/actions/workflows/ci.yaml/badge.svg)](https://github.com/aidenwallis/kysely-d1/actions/workflows/ci.yaml)
 [![npm](https://img.shields.io/npm/v/kysely-d1.svg)](https://www.npmjs.com/package/kysely-d1)
 
-[Kysely](https://github.com/koskimas/kysely) adapter for [Cloudflare D1](https://blog.cloudflare.com/introducing-d1/).
+[Kysely](https://github.com/koskimas/kysely) adapter for [Cloudflare D1](https://developers.cloudflare.com/d1/).
 
 ```bash
 npm i kysely-d1
@@ -13,7 +13,7 @@ This project was largely adapted from [kysely-planetscale](https://github.com/de
 
 ## Usage
 
-Pass your D1 binding into the dialect in order to configure the Kysely client. Follow the private D1 beta docs to setup a D1 binding to your worker.
+Pass your D1 binding into the dialect in order to configure the Kysely client. Follow [these docs](https://developers.cloudflare.com/d1/get-started/#4-bind-your-worker-to-your-d1-database) for instructions on how to do so.
 
 ```typescript
 import { Kysely } from 'kysely';
