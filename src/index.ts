@@ -107,7 +107,7 @@ class D1Connection implements DatabaseConnection {
     }
 
     return {
-      insertId: results.lastRowId !== null ? BigInt(results.lastRowId) : undefined,
+      insertId: results.lastRowId === undefined || results.lastRowId === null ? undefined : BigInt(results.lastRowId),
       rows: (results?.results as O[]) || [],
       numUpdatedOrDeletedRows: results.changes > 0 ? BigInt(results.changes) : undefined,
     };
