@@ -106,10 +106,16 @@ class D1Connection implements DatabaseConnection {
       throw new Error(results.error);
     }
 
+    const numAffectedRows = results.changes > 0 ? BigInt(results.changes) : undefined;
+
     return {
       insertId: results.lastRowId === undefined || results.lastRowId === null ? undefined : BigInt(results.lastRowId),
       rows: (results?.results as O[]) || [],
-      numUpdatedOrDeletedRows: results.changes > 0 ? BigInt(results.changes) : undefined,
+      // @ts-ignore replaces `QueryResult.numUpdatedOrDeletedRows` in kysely > 0.22
+      // following https://github.com/koskimas/kysely/pull/188
+      numAffectedRows,
+      // deprecated in kysely > 0.22, keep for backward compatibility.
+      numUpdatedOrDeletedRows: numAffectedRows,
     };
   }
 
