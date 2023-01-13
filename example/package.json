@@ -15,6 +15,6 @@
   },
   "dependencies": {
     "kysely": "^0.23.3",
-    "kysely-d1": "^0.0.6"
+    "kysely-d1": "^0.1.0"
   }
 }
