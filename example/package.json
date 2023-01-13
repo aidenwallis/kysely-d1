@@ -14,7 +14,7 @@
     "deploy": "wrangler publish"
   },
   "dependencies": {
-    "kysely": "^0.22.0",
-    "kysely-d1": "^0.0.5"
+    "kysely": "^0.23.3",
+    "kysely-d1": "^0.0.6"
   }
 }
