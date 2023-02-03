@@ -1,6 +1,6 @@
 name = "kysely-d1"
 main = "src/index.ts"
-compatibility_date = "2022-10-16"
+compatibility_date = "2022-02-03"
 
 [[ d1_databases ]]
 binding = "DB" # i.e. available in your Worker on env.DB
