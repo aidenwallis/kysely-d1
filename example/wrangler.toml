@@ -5,4 +5,5 @@ compatibility_date = "2023-02-03"
 [[ d1_databases ]]
 binding = "DB" # i.e. available in your Worker on env.DB
 database_name = "kysely-test"
-database_id = "6ad59e23-aa88-4040-859d-016031bf1426"
+database_id = "1ddd86c2-efcb-404b-bc73-c2bd83dbb54b"
+preview_database_id = "1ddd86c2-efcb-404b-bc73-c2bd83dbb54b"
