@@ -50,11 +50,17 @@ export default {
         if (!(key && value)) {
           return new Response('Key and value must be defined.', { status: 400 });
         }
-        await db
-          .insertInto('kv')
-          .values([{ key, value }])
-          .onConflict((oc) => oc.column('key').doUpdateSet({ value }))
-          .execute();
+        try {
+          await db
+            .insertInto('kv')
+            .values([{ key, value }])
+            .onConflict((oc) => oc.column('key').doUpdateSet({ value }))
+            .execute();
+        } catch (err) {
+          console.log(err);
+          console.log((err as any).cause);
+          throw err;
+        }
         return new Response(value, { status: 200 });
       }
 
