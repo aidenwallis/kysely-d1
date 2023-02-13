@@ -106,10 +106,13 @@ class D1Connection implements DatabaseConnection {
       throw new Error(results.error);
     }
 
-    const numAffectedRows = results.changes > 0 ? BigInt(results.changes) : undefined;
+    const numAffectedRows = results.meta.changes > 0 ? BigInt(results.meta.changes) : undefined;
 
     return {
-      insertId: results.lastRowId === undefined || results.lastRowId === null ? undefined : BigInt(results.lastRowId),
+      insertId:
+        results.meta.last_row_id === undefined || results.meta.last_row_id === null
+          ? undefined
+          : BigInt(results.meta.last_row_id),
       rows: (results?.results as O[]) || [],
       numAffectedRows,
       // @ts-ignore deprecated in kysely >= 0.23, keep for backward compatibility.
