@@ -11,7 +11,7 @@ import {
   QueryCompiler,
   QueryResult,
 } from 'kysely';
-import type {D1Database} from "@cloudflare/workers-types"
+import type { D1Database } from '@cloudflare/workers-types';
 
 /**
  * Config for the D1 dialect. Pass your D1 instance to this object that you bound in `wrangler.toml`.
