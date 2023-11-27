@@ -14,8 +14,8 @@ import {
   SqliteIntrospector,
   SqliteQueryCompiler,
   TableMetadata,
-} from "kysely";
-import type { D1Database } from "@cloudflare/workers-types";
+} from 'kysely';
+import type { D1Database } from '@cloudflare/workers-types';
 
 /**
  * Config for the D1 dialect. Pass your D1 instance to this object that you bound in `wrangler.toml`.
@@ -37,13 +37,8 @@ class D1Introspector extends SqliteIntrospector {
     this.#config = config;
   }
 
-  async #getTableMetadata(
-    name: string,
-    isView: boolean,
-  ): Promise<TableMetadata> {
-    const result = await this.#config.database.prepare(
-      `PRAGMA table_info(${name})`,
-    ).run();
+  async #getTableMetadata(name: string, isView: boolean): Promise<TableMetadata> {
+    const result = await this.#config.database.prepare(`PRAGMA table_info(${name})`).run();
     const rows = result.results as {
       name: string;
       type: string;
@@ -65,30 +60,21 @@ class D1Introspector extends SqliteIntrospector {
   }
 
   async getTables(options?: DatabaseMetadataOptions): Promise<TableMetadata[]> {
-    const result = await this.#config.database.prepare("PRAGMA table_list")
-      .run();
+    const result = await this.#config.database.prepare('PRAGMA table_list').run();
     // We filter out tables that start with "_cf_", as they are internal tables
     // which will cause errors when trying to introspect them.
     let tables = (
       result.results as {
         name: string;
-        type: "table" | "view";
+        type: 'table' | 'view';
       }[]
-    ).filter(({ name }) => !name.startsWith("_cf_"));
+    ).filter(({ name }) => !name.startsWith('_cf_'));
 
     if (!options?.withInternalKyselyTables) {
-      tables = tables.filter(
-        ({ name }) =>
-          name !== DEFAULT_MIGRATION_TABLE &&
-          name !== DEFAULT_MIGRATION_LOCK_TABLE,
-      );
+      tables = tables.filter(({ name }) => name !== DEFAULT_MIGRATION_TABLE && name !== DEFAULT_MIGRATION_LOCK_TABLE);
     }
 
-    return Promise.all(
-      tables.map(({ name, type }) =>
-        this.#getTableMetadata(name, type === "view")
-      ),
-    );
+    return Promise.all(tables.map(({ name, type }) => this.#getTableMetadata(name, type === 'view')));
   }
 }
 
@@ -179,15 +165,13 @@ class D1Connection implements DatabaseConnection {
       throw new Error(results.error);
     }
 
-    const numAffectedRows = results.meta.changes > 0
-      ? BigInt(results.meta.changes)
-      : undefined;
+    const numAffectedRows = results.meta.changes > 0 ? BigInt(results.meta.changes) : undefined;
 
     return {
-      insertId: results.meta.last_row_id === undefined ||
-          results.meta.last_row_id === null
-        ? undefined
-        : BigInt(results.meta.last_row_id),
+      insertId:
+        results.meta.last_row_id === undefined || results.meta.last_row_id === null
+          ? undefined
+          : BigInt(results.meta.last_row_id),
       rows: (results?.results as O[]) || [],
       numAffectedRows,
       // @ts-ignore deprecated in kysely >= 0.23, keep for backward compatibility.
@@ -198,27 +182,24 @@ class D1Connection implements DatabaseConnection {
   async beginTransaction() {
     // this.#transactionClient = this.#transactionClient ?? new PlanetScaleConnection(this.#config)
     // this.#transactionClient.#conn.execute('BEGIN')
-    throw new Error("Transactions are not supported yet.");
+    throw new Error('Transactions are not supported yet.');
   }
 
   async commitTransaction() {
     // if (!this.#transactionClient) throw new Error('No transaction to commit')
     // this.#transactionClient.#conn.execute('COMMIT')
     // this.#transactionClient = undefined
-    throw new Error("Transactions are not supported yet.");
+    throw new Error('Transactions are not supported yet.');
   }
 
   async rollbackTransaction() {
     // if (!this.#transactionClient) throw new Error('No transaction to rollback')
     // this.#transactionClient.#conn.execute('ROLLBACK')
     // this.#transactionClient = undefined
-    throw new Error("Transactions are not supported yet.");
+    throw new Error('Transactions are not supported yet.');
   }
 
-  async *streamQuery<O>(
-    _compiledQuery: CompiledQuery,
-    _chunkSize: number,
-  ): AsyncIterableIterator<QueryResult<O>> {
-    throw new Error("D1 Driver does not support streaming");
+  async *streamQuery<O>(_compiledQuery: CompiledQuery, _chunkSize: number): AsyncIterableIterator<QueryResult<O>> {
+    throw new Error('D1 Driver does not support streaming');
   }
 }
