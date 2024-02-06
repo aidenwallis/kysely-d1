@@ -1,12 +1,20 @@
 {
   "name": "kysely-d1",
   "description": "Kysely dialect for Cloudflare D1",
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "version": "0.3.0",
   "types": "./dist/index.d.ts",
   "repository": "git@github.com:aidenwallis/kysely-d1.git",
   "author": "Aiden <aiden@aidenwallis.co.uk>",
   "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
   "files": [
     "dist"
   ],
@@ -18,7 +26,7 @@
     "serverless"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc -p tsconfig.cjs.json && mv dist/cjs/index.js dist/index.cjs && rmdir dist/cjs",
     "check": "prettier --check src/ example/",
     "format": "prettier --write src/ example/"
   },

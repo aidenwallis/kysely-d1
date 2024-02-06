@@ -2,6 +2,7 @@
   "extends": "@tsconfig/node14/tsconfig.json",
   "compilerOptions": {
     "rootDir": "src",
+    "module": "ESNext",
     "outDir": "dist",
     "alwaysStrict": true,
     "skipLibCheck": true,
