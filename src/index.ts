@@ -1,4 +1,5 @@
 import {
+  Compilable,
   CompiledQuery,
   DatabaseConnection,
   DatabaseIntrospector,
@@ -11,7 +12,7 @@ import {
   QueryCompiler,
   QueryResult,
 } from 'kysely';
-import type { D1Database } from '@cloudflare/workers-types';
+import type { D1Database, D1Result } from '@cloudflare/workers-types';
 
 /**
  * Config for the D1 dialect. Pass your D1 instance to this object that you bound in `wrangler.toml`.
@@ -87,6 +88,21 @@ class D1Driver implements Driver {
   async destroy(): Promise<void> {}
 }
 
+function transformD1ResultToKyselyQueryResult<O>(results: D1Result<unknown>): QueryResult<O> {
+  const numAffectedRows = results.meta.changes > 0 ? BigInt(results.meta.changes) : undefined;
+
+  return {
+    insertId:
+      results.meta.last_row_id === undefined || results.meta.last_row_id === null
+        ? undefined
+        : BigInt(results.meta.last_row_id),
+    rows: (results?.results as O[]) || [],
+    numAffectedRows,
+    // @ts-ignore deprecated in kysely >= 0.23, keep for backward compatibility.
+    numUpdatedOrDeletedRows: numAffectedRows,
+  };
+}
+
 class D1Connection implements DatabaseConnection {
   #config: D1DialectConfig;
   //   #transactionClient?: D1Connection
@@ -107,18 +123,7 @@ class D1Connection implements DatabaseConnection {
       throw new Error(results.error);
     }
 
-    const numAffectedRows = results.meta.changes > 0 ? BigInt(results.meta.changes) : undefined;
-
-    return {
-      insertId:
-        results.meta.last_row_id === undefined || results.meta.last_row_id === null
-          ? undefined
-          : BigInt(results.meta.last_row_id),
-      rows: (results?.results as O[]) || [],
-      numAffectedRows,
-      // @ts-ignore deprecated in kysely >= 0.23, keep for backward compatibility.
-      numUpdatedOrDeletedRows: numAffectedRows,
-    };
+    return transformD1ResultToKyselyQueryResult(results);
   }
 
   async beginTransaction() {
@@ -144,4 +149,40 @@ class D1Connection implements DatabaseConnection {
   async *streamQuery<O>(_compiledQuery: CompiledQuery, _chunkSize: number): AsyncIterableIterator<QueryResult<O>> {
     throw new Error('D1 Driver does not support streaming');
   }
+}
+
+type QueryOutput<Q> = Q extends Compilable<infer O> ? O : never
+/**
+ * Helper function of [Batch statements][0]
+ *
+ * ```typescript
+ * const results = await batch(env.DB, [
+ *   db.updateTable('kv').set({ value: '1' }).where('key', '=', key1),
+ *   db.updateTable('kv').set({ value: '2' }).where('key', '=', key2),
+ *   db.selectFrom('kv').selectAll().where('key', 'in', [key1, key2]),
+ * ] as const)
+ * const { rows } = results[2]
+ * ```
+ *
+ * [0]: https://developers.cloudflare.com/d1/build-with-d1/d1-client-api/#batch-statements
+ */
+export async function batch<Q extends readonly Compilable[]>(
+  database: D1Database,
+  queries: Q
+): Promise<{ [P in keyof Q]: QueryResult<QueryOutput<Q[P]>> }> {
+  if (queries.length === 0)
+    return [] as { [P in keyof Q]: QueryResult<QueryOutput<Q[P]>> };
+
+  const results = await database.batch(
+    queries
+      .map((query) => query.compile())
+      .map(({ sql, parameters }) => database.prepare(sql).bind(...parameters))
+  );
+
+  const error = results.find((result) => result.error);
+  if (error) throw new Error(error.error);
+
+  return results.map(
+    (result): QueryResult<unknown> => transformD1ResultToKyselyQueryResult(result)
+  ) as { [P in keyof Q]: QueryResult<QueryOutput<Q[P]>> };
 }
