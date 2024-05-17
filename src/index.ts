@@ -1,4 +1,5 @@
 import {
+  Compilable,
   CompiledQuery,
   DatabaseConnection,
   DatabaseIntrospector,
@@ -148,4 +149,40 @@ class D1Connection implements DatabaseConnection {
   async *streamQuery<O>(_compiledQuery: CompiledQuery, _chunkSize: number): AsyncIterableIterator<QueryResult<O>> {
     throw new Error('D1 Driver does not support streaming');
   }
+}
+
+type QueryOutput<Q> = Q extends Compilable<infer O> ? O : never
+/**
+ * Helper function of [Batch statements][0]
+ *
+ * ```typescript
+ * const results = await batch(env.DB, [
+ *   db.updateTable('kv').set({ value: '1' }).where('key', '=', key1),
+ *   db.updateTable('kv').set({ value: '2' }).where('key', '=', key2),
+ *   db.selectFrom('kv').selectAll().where('key', 'in', [key1, key2]),
+ * ] as const)
+ * const { rows } = results[2]
+ * ```
+ *
+ * [0]: https://developers.cloudflare.com/d1/build-with-d1/d1-client-api/#batch-statements
+ */
+export async function batch<Q extends readonly Compilable[]>(
+  database: D1Database,
+  queries: Q
+): Promise<{ [P in keyof Q]: QueryResult<QueryOutput<Q[P]>> }> {
+  if (queries.length === 0)
+    return [] as { [P in keyof Q]: QueryResult<QueryOutput<Q[P]>> };
+
+  const results = await database.batch(
+    queries
+      .map((query) => query.compile())
+      .map(({ sql, parameters }) => database.prepare(sql).bind(...parameters))
+  );
+
+  const error = results.find((result) => result.error);
+  if (error) throw new Error(error.error);
+
+  return results.map(
+    (result): QueryResult<unknown> => transformD1ResultToKyselyQueryResult(result)
+  ) as { [P in keyof Q]: QueryResult<QueryOutput<Q[P]>> };
 }
