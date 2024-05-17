@@ -11,7 +11,7 @@ import {
   QueryCompiler,
   QueryResult,
 } from 'kysely';
-import type { D1Database } from '@cloudflare/workers-types';
+import type { D1Database, D1Result } from '@cloudflare/workers-types';
 
 /**
  * Config for the D1 dialect. Pass your D1 instance to this object that you bound in `wrangler.toml`.
@@ -87,6 +87,21 @@ class D1Driver implements Driver {
   async destroy(): Promise<void> {}
 }
 
+function transformD1ResultToKyselyQueryResult<O>(results: D1Result<unknown>): QueryResult<O> {
+  const numAffectedRows = results.meta.changes > 0 ? BigInt(results.meta.changes) : undefined;
+
+  return {
+    insertId:
+      results.meta.last_row_id === undefined || results.meta.last_row_id === null
+        ? undefined
+        : BigInt(results.meta.last_row_id),
+    rows: (results?.results as O[]) || [],
+    numAffectedRows,
+    // @ts-ignore deprecated in kysely >= 0.23, keep for backward compatibility.
+    numUpdatedOrDeletedRows: numAffectedRows,
+  };
+}
+
 class D1Connection implements DatabaseConnection {
   #config: D1DialectConfig;
   //   #transactionClient?: D1Connection
@@ -107,18 +122,7 @@ class D1Connection implements DatabaseConnection {
       throw new Error(results.error);
     }
 
-    const numAffectedRows = results.meta.changes > 0 ? BigInt(results.meta.changes) : undefined;
-
-    return {
-      insertId:
-        results.meta.last_row_id === undefined || results.meta.last_row_id === null
-          ? undefined
-          : BigInt(results.meta.last_row_id),
-      rows: (results?.results as O[]) || [],
-      numAffectedRows,
-      // @ts-ignore deprecated in kysely >= 0.23, keep for backward compatibility.
-      numUpdatedOrDeletedRows: numAffectedRows,
-    };
+    return transformD1ResultToKyselyQueryResult(results);
   }
 
   async beginTransaction() {
