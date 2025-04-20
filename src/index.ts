@@ -2,14 +2,18 @@ import {
   CompiledQuery,
   DatabaseConnection,
   DatabaseIntrospector,
+  DatabaseMetadataOptions,
+  DEFAULT_MIGRATION_LOCK_TABLE,
+  DEFAULT_MIGRATION_TABLE,
   Dialect,
   Driver,
   Kysely,
+  QueryCompiler,
+  QueryResult,
   SqliteAdapter,
   SqliteIntrospector,
   SqliteQueryCompiler,
-  QueryCompiler,
-  QueryResult,
+  TableMetadata,
 } from 'kysely';
 import type { D1Database } from '@cloudflare/workers-types';
 
@@ -18,6 +22,60 @@ import type { D1Database } from '@cloudflare/workers-types';
  */
 export interface D1DialectConfig {
   database: D1Database;
+}
+
+/**
+ * A custom Kysely Introspector class for D1 that uses supported SQLite PRAGMA
+ * statements to get the table metadata, instead of querying protected tables.
+ */
+class D1Introspector extends SqliteIntrospector {
+  #config: D1DialectConfig;
+
+  constructor(db: Kysely<any>, config: D1DialectConfig) {
+    super(db);
+
+    this.#config = config;
+  }
+
+  async #getTableMetadata(name: string, isView: boolean): Promise<TableMetadata> {
+    const result = await this.#config.database.prepare(`PRAGMA table_info(${name})`).run();
+    const rows = result.results as {
+      name: string;
+      type: string;
+      notnull: 1 | 0;
+      dflt_value: unknown;
+    }[];
+
+    return {
+      name,
+      isView,
+      columns: rows.map((row) => ({
+        name: row.name,
+        dataType: row.type,
+        isAutoIncrementing: false,
+        isNullable: row.notnull === 0,
+        hasDefaultValue: row.dflt_value !== null,
+      })),
+    };
+  }
+
+  async getTables(options?: DatabaseMetadataOptions): Promise<TableMetadata[]> {
+    const result = await this.#config.database.prepare('PRAGMA table_list').run();
+    // We filter out tables that start with "_cf_", as they are internal tables
+    // which will cause errors when trying to introspect them.
+    let tables = (
+      result.results as {
+        name: string;
+        type: 'table' | 'view';
+      }[]
+    ).filter(({ name }) => !name.startsWith('_cf_'));
+
+    if (!options?.withInternalKyselyTables) {
+      tables = tables.filter(({ name }) => name !== DEFAULT_MIGRATION_TABLE && name !== DEFAULT_MIGRATION_LOCK_TABLE);
+    }
+
+    return Promise.all(tables.map(({ name, type }) => this.#getTableMetadata(name, type === 'view')));
+  }
 }
 
 /**
@@ -53,7 +111,7 @@ export class D1Dialect implements Dialect {
   }
 
   createIntrospector(db: Kysely<any>): DatabaseIntrospector {
-    return new SqliteIntrospector(db);
+    return new D1Introspector(db, this.#config);
   }
 }
 
