@@ -13,7 +13,8 @@ This project was largely adapted from [kysely-planetscale](https://github.com/de
 
 ## Usage
 
-Pass your D1 binding into the dialect in order to configure the Kysely client. Follow [these docs](https://developers.cloudflare.com/d1/get-started/#4-bind-your-worker-to-your-d1-database) for instructions on how to do so.
+Pass your D1 binding into the dialect in order to configure the Kysely client.
+Follow [these cloudflare docs](https://developers.cloudflare.com/d1/get-started/#3-bind-your-worker-to-your-d1-database) for instructions on how to do so.
 
 ```typescript
 import { Kysely } from 'kysely';
