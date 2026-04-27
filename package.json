@@ -27,6 +27,7 @@
   ],
   "scripts": {
     "build": "tsc && tsc -p tsconfig.cjs.json && mv dist/cjs/index.js dist/index.cjs && rmdir dist/cjs",
+    "prepare": "npm run build",
     "check": "prettier --check src/ example/",
     "format": "prettier --write src/ example/"
   },
