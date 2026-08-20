@@ -27,8 +27,10 @@
   ],
   "scripts": {
     "build": "tsc && tsc -p tsconfig.cjs.json && mv dist/cjs/index.js dist/index.cjs && rmdir dist/cjs",
-    "check": "prettier --check src/ example/",
-    "format": "prettier --write src/ example/"
+    "check": "prettier --check src/ test/ example/",
+    "format": "prettier --write src/ test/ example/",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.test.json"
   },
   "peerDependencies": {
     "kysely": "*"
@@ -37,7 +39,9 @@
     "@cloudflare/workers-types": "^4.20230115.0",
     "@tsconfig/node14": "^1.0.3",
     "kysely": "^0.23.3",
+    "miniflare": "^4.20260730.0",
     "prettier": "^2.7.1",
-    "typescript": "^4.8.4"
+    "typescript": "^4.8.4",
+    "vitest": "^3.2.7"
   }
 }
