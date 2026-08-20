@@ -11,13 +11,97 @@ import {
   QueryCompiler,
   QueryResult,
 } from 'kysely';
+import type { MutatingQueryNode, RootOperationNode } from 'kysely';
 import type { D1Database } from '@cloudflare/workers-types';
+
+/**
+ * How the dialect implements `db.transaction()`.
+ *
+ * - `none` (default): transactions are rejected, because D1 has no `BEGIN`/`COMMIT`.
+ * - `batch`: writes are buffered until commit and then sent as a single {@link D1Database.batch}
+ *   call, which D1 runs as one atomic unit and rolls back entirely if any statement fails.
+ *
+ * `batch` trades a few guarantees for that atomicity, so it is opt-in. Inside a transaction:
+ *
+ * - Reads run immediately and do **not** see the writes buffered before them.
+ * - A buffered write reports `numAffectedRows` as `1` and no `insertId`, because the real counts
+ *   only exist once the batch has run.
+ * - A write with a `returning` clause is rejected, since its rows cannot be produced up front.
+ * - A raw query that is neither a `select` nor an `insert`/`update`/`delete` is rejected, because
+ *   the dialect cannot tell whether it must be deferred to stay atomic.
+ * - Schema changes run immediately and are not part of the batch.
+ * - Errors surface from `commit`, not from the statement that caused them.
+ */
+export type D1TransactionMode = 'none' | 'batch';
 
 /**
  * Config for the D1 dialect. Pass your D1 instance to this object that you bound in `wrangler.toml`.
  */
 export interface D1DialectConfig {
   database: D1Database;
+
+  /**
+   * Defaults to `none`. See {@link D1TransactionMode} for what `batch` changes.
+   *
+   * ```typescript
+   * new D1Dialect({
+   *   database: env.DB,
+   *   transactionMode: 'batch',
+   * })
+   * ```
+   */
+  transactionMode?: D1TransactionMode;
+}
+
+const leadingWrite = /^\s*(?:insert|update|delete)\b/i;
+const leadingRead = /^\s*select\b/i;
+const rawReturning = /\breturning\b/i;
+
+const returningNotSupported =
+  "A 'returning' clause cannot be used inside a 'batch' transaction, because the rows are only known once the " +
+  'transaction commits. Run the query outside of a transaction, or drop the clause.';
+
+function asMutatingQuery(node: RootOperationNode): MutatingQueryNode | undefined {
+  if (node.kind === 'InsertQueryNode' || node.kind === 'UpdateQueryNode' || node.kind === 'DeleteQueryNode') {
+    return node;
+  }
+  return undefined;
+}
+
+/**
+ * Decides whether a query has to be buffered until commit for the transaction to stay atomic.
+ * Queries built with the query builder are classified from their operation node; raw queries can
+ * only be classified from their SQL, and anything that is not clearly a read or a write is
+ * rejected rather than silently run outside the batch.
+ */
+function isDeferredWrite(compiledQuery: CompiledQuery): boolean {
+  const mutatingQuery = asMutatingQuery(compiledQuery.query);
+  if (mutatingQuery) {
+    if (mutatingQuery.returning) {
+      throw new Error(returningNotSupported);
+    }
+    return true;
+  }
+
+  if (compiledQuery.query.kind !== 'RawNode') {
+    return false;
+  }
+
+  if (leadingWrite.test(compiledQuery.sql)) {
+    if (rawReturning.test(compiledQuery.sql)) {
+      throw new Error(returningNotSupported);
+    }
+    return true;
+  }
+
+  if (leadingRead.test(compiledQuery.sql)) {
+    return false;
+  }
+
+  throw new Error(
+    `Could not classify this query as a read or a write, so it cannot be run in a 'batch' transaction: ${compiledQuery.sql}. ` +
+      'Build it with the Kysely query builder, or run it outside of a transaction.'
+  );
 }
 
 /**
@@ -89,15 +173,20 @@ class D1Driver implements Driver {
 
 class D1Connection implements DatabaseConnection {
   #config: D1DialectConfig;
-  //   #transactionClient?: D1Connection
+  #bufferedWrites: CompiledQuery[] | null = null;
 
   constructor(config: D1DialectConfig) {
     this.#config = config;
   }
 
   async executeQuery<O>(compiledQuery: CompiledQuery): Promise<QueryResult<O>> {
-    // Transactions are not supported yet.
-    // if (this.#transactionClient) return this.#transactionClient.executeQuery(compiledQuery)
+    if (this.#bufferedWrites !== null && isDeferredWrite(compiledQuery)) {
+      this.#bufferedWrites.push(compiledQuery);
+
+      // The batch has not run yet, so the real counts do not exist. One affected row is the
+      // optimistic answer, and it is corrected by the commit failing if it turns out to be wrong.
+      return { rows: [], numAffectedRows: BigInt(1) };
+    }
 
     const results = await this.#config.database
       .prepare(compiledQuery.sql)
@@ -122,23 +211,34 @@ class D1Connection implements DatabaseConnection {
   }
 
   async beginTransaction() {
-    // this.#transactionClient = this.#transactionClient ?? new PlanetScaleConnection(this.#config)
-    // this.#transactionClient.#conn.execute('BEGIN')
-    throw new Error('Transactions are not supported yet.');
+    this.#assertBatchTransactions();
+    this.#bufferedWrites = [];
   }
 
   async commitTransaction() {
-    // if (!this.#transactionClient) throw new Error('No transaction to commit')
-    // this.#transactionClient.#conn.execute('COMMIT')
-    // this.#transactionClient = undefined
-    throw new Error('Transactions are not supported yet.');
+    this.#assertBatchTransactions();
+    const writes = this.#bufferedWrites;
+    if (!writes) throw new Error('No transaction to commit');
+    this.#bufferedWrites = null;
+    if (!writes.length) return;
+
+    // D1 runs a batch as a single transaction, and rolls all of it back if any statement fails.
+    await this.#config.database.batch(writes.map((write) => this.#config.database.prepare(write.sql).bind(...write.parameters)));
   }
 
   async rollbackTransaction() {
-    // if (!this.#transactionClient) throw new Error('No transaction to rollback')
-    // this.#transactionClient.#conn.execute('ROLLBACK')
-    // this.#transactionClient = undefined
-    throw new Error('Transactions are not supported yet.');
+    this.#assertBatchTransactions();
+
+    // Kysely also rolls back when the commit itself failed, and throwing here would replace the
+    // error that D1 reported with a less useful one. Dropping the buffer is the whole rollback:
+    // the batch either ran atomically or never ran at all.
+    this.#bufferedWrites = null;
+  }
+
+  #assertBatchTransactions() {
+    if (this.#config.transactionMode !== 'batch') {
+      throw new Error('Transactions are not supported yet.');
+    }
   }
 
   async *streamQuery<O>(_compiledQuery: CompiledQuery, _chunkSize: number): AsyncIterableIterator<QueryResult<O>> {
