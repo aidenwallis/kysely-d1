@@ -40,8 +40,8 @@ export class D1Dialect implements Dialect {
     this.#config = config;
   }
 
-  createAdapter() {
-    return new SqliteAdapter();
+  createAdapter(): SqliteAdapter {
+    return new D1Adapter();
   }
 
   createDriver(): Driver {
@@ -54,6 +54,21 @@ export class D1Dialect implements Dialect {
 
   createIntrospector(db: Kysely<any>): DatabaseIntrospector {
     return new SqliteIntrospector(db);
+  }
+}
+
+/**
+ * SQLite dialect adapter for D1, which is a binding rather than a single connection: every `acquireConnection()`
+ * returns a fresh `D1Connection` and nothing is shared between them.
+ *
+ * Since 0.29, Kysely serializes every query behind one mutex when the adapter reports
+ * `supportsMultipleConnections === false`, as `SqliteAdapter` does. On Workers a Kysely instance usually lives as
+ * long as the isolate, so that mutex is shared by every request, and a request cancelled while holding it (client
+ * disconnect, `waitUntil` past its limit) never releases it: every later query in the isolate then waits forever.
+ */
+class D1Adapter extends SqliteAdapter {
+  get supportsMultipleConnections(): boolean {
+    return true;
   }
 }
 
